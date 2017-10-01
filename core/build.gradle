@@ -1,0 +1,55 @@
+/*
+ * Copyright (c) 2017 Joseph Sacchini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the 2nd version of the GNU General
+ * Public License as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+dependencies {
+    shadow project(path: ":annotations", configuration: "shadow")
+    shadow project(path: ":util", configuration: "shadow")
+    compile project(path: ":apt", configuration: "shadow")
+
+    shadow "io.reactivex.rxjava2:rxjava:2.1.4"
+
+    shadow "com.google.inject.extensions:guice-assistedinject:${guiceVersion}"
+    shadow "com.google.inject.extensions:guice-throwingproviders:${guiceVersion}"
+
+    def mycilaVersion = '3.6.ga'
+
+    shadow "com.mycila.guice.extensions:mycila-guice-jsr250:${mycilaVersion}"
+    shadow "com.mycila.guice.extensions:mycila-guice-closeable:${mycilaVersion}"
+
+    compile "org.spigotmc:spigot-api:${bukkitVersion}"
+
+    def autoValue = "com.google.auto.value:auto-value:1.5.1"
+
+    compile autoValue
+    apt autoValue
+}
+
+shadowJar {
+    dependencies {
+        exclude(dependency("org.reactivestreams:reactive-streams"))
+        exclude(dependency("org.yaml:snakeyaml"))
+        exclude(dependency("net.md-5:bungeecord-chat"))
+        exclude(dependency("com.google.code.gson:gson"))
+        exclude(dependency("com.google.guava:guava"))
+        exclude(dependency("com.googlecode.json-simple:json-simple"))
+        exclude(dependency("junit:junit"))
+        exclude(dependency("org.hamcrest:hamcrest-core"))
+        exclude(dependency("org.spigotmc:spigot-api"))
+        exclude(dependency("com.google.auto.value:auto-value"))
+        exclude(dependency("com.google.guava:guava"))
+    }
+}

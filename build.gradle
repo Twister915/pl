@@ -1,0 +1,130 @@
+/*
+ * Copyright (c) 2017 Joseph Sacchini
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the 2nd version of the GNU General
+ * Public License as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+plugins {
+    id 'net.ltgt.apt' version '0.12'
+    id 'net.ltgt.apt-idea' version '0.12'
+    id 'com.github.johnrengelman.shadow' version '2.0.1'
+}
+
+apply plugin: "idea"
+apply plugin: "maven"
+
+def bukkitVersion = '1.12.2-R0.1-SNAPSHOT'
+
+allprojects {
+    group "sh.joey"
+    version bukkitVersion
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "net.ltgt.apt"
+    apply plugin: "net.ltgt.apt-idea"
+    apply plugin: "maven"
+    apply plugin: "com.github.johnrengelman.shadow"
+
+    sourceCompatibility = 1.8
+
+    project.ext.useShadow = {!project.configurations.shadow.empty }
+    project.ext.bukkitVersion = bukkitVersion
+    project.ext.guiceVersion = '4.1.0'
+    project.ext.snakeYamlVersion = '1.18'
+
+    repositories {
+        mavenCentral()
+        jcenter()
+
+        repositories {
+            maven {
+                name "spigot-snapshots"
+                url "https://hub.spigotmc.org/nexus/content/repositories/snapshots/"
+            }
+
+            maven {
+                name "sonatype-snapshots"
+                url "https://oss.sonatype.org/content/repositories/snapshots/"
+            }
+        }
+    }
+
+    dependencies {
+        def lombok = "org.projectlombok:lombok:1.16.16"
+        compile lombok
+        apt lombok
+
+        testCompile group: "org.junit.jupiter", name: "junit-jupiter-api", version: "5.0.0"
+    }
+
+    configurations {
+        shadow {
+            description = "Includes the dependency in the final shadowJar"
+        }
+
+        compile {
+            extendsFrom shadow
+        }
+    }
+
+    compileJava {
+        //noinspection GroovyAssignabilityCheck
+        dependsOn {
+            // collect = map, findAll = filter
+            project.configurations.compile.resolvedConfiguration.resolvedArtifacts.collect {
+                if (it.id.componentIdentifier instanceof ProjectComponentIdentifier) {
+                    ProjectComponentIdentifier id = it.id.componentIdentifier as ProjectComponentIdentifier
+                    def otherProject = project(id.projectPath)
+                    if (otherProject.useShadow()) {
+                        return "$id.projectPath:shadowJar"
+                    }
+                } else {
+                    return null
+                }
+            }.findAll { it != null }
+        }
+    }
+
+    shadowJar {
+        archiveName = "${jar.baseName}.jar"
+        configurations = [project.configurations.shadow]
+
+        dependencies {
+            exclude(dependency("org.apiguardian:apiguardian-api"))
+            exclude(dependency("org.opentest4j:opentest4j"))
+            exclude(dependency("org.junit.platform:junit-platform-commons"))
+            exclude(dependency("com.google.guava:guava"))
+            exclude(dependency("org.projectlombok:lombok"))
+        }
+    }
+
+    task buildProject {
+        doLast {}
+        dependsOn {
+            project.useShadow() ? "shadowJar" : "build"
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = "4.1"
+}
+
+idea {
+    project {
+        configureAnnotationProcessing = true
+    }
+}
